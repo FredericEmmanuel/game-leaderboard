@@ -1,55 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Leaderboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Game Leaderboard</title>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="modal.css">
 </head>
+
 <body>
-    <h1>Game Leaderboard</h1>
-    <table id="leaderboard">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Player Name</th>
-                <th>Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Leaderboard entries will be dynamically inserted here -->
-        </tbody>
+
+  <!-- TITLE -->
+  <h1 class="title">
+    Game Leaderboard
+  </h1>
+
+  <!-- TOOLBAR -->
+  <section class="toolbar">
+
+    <!-- SEARCH -->
+    <input
+      type="text"
+      id="search-input"
+      placeholder="Search Player Name"
+    >
+
+    <!-- INSERT -->
+    <button class="insert-btn">
+      + Insert Player
+    </button>
+
+    <!-- DELETE -->
+    <button class="delete-btn">
+      Delete Player
+    </button>
+
+    <!-- FILTER -->
+    <button class="filter-btn">
+      Filter
+    </button>
+
+  </section>
+
+  <!-- TABLE -->
+  <section class="table-container">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Username</th>
+          <th>Highscore</th>
+        </tr>
+      </thead>
+
+      <tbody id="leaderboard-body">
+
+        
+
+      </tbody>
+
     </table>
 
-    <script>
-        // Fetch leaderboard data from the backend API
-        async function fetchLeaderboard() {
-            try {
-                const response = await fetch('http://localhost:3000/leaderboard');
-                const data = await response.json();
-                updateLeaderboard(data);
-            } catch (error) {
-                console.error('Error fetching leaderboard:', error);
-            }
-        }
+  </section>
 
-        // Update the leaderboard table with fetched data
-        function updateLeaderboard(leaderboardData) {
-            const tbody = document.querySelector('#leaderboard tbody');
-            tbody.innerHTML = ''; // Clear existing entries
+  <!-- PAGINATION -->
+  <section class="pagination">
 
-            leaderboardData.forEach((entry, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${entry.playerName}</td>
-                    <td>${entry.score}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
+    <button>
+      ←
+    </button>
 
-        // Fetch the leaderboard data when the page loads
-        window.onload = fetchLeaderboard;
-    </script>
+    <button>
+      →
+    </button>
+
+  </section>
+
+  <script src="../js/app.js"></script>
+  <!-- INSERT MODAL -->
+<div class="modal hidden" id="insert-modal">
+
+  <div class="modal-content">
+
+    <h2>Add Player</h2>
+
+    <input
+      type="number"
+      id="user-id-input"
+      placeholder="User ID"
+    >
+
+    <input
+      type="text"
+      id="username-input"
+      placeholder="Username"
+    >
+
+    <input
+      type="number"
+      id="highscore-input"
+      placeholder="Highscore"
+    >
+
+    <button id="save-player-btn">
+      Save Player
+    </button>
+
+  </div>
+
+</div>
+<script src="../js/modal.js"></script>
+
 </body>
 </html>
