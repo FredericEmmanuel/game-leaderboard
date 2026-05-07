@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <title>Game Leaderboard</title>
+</head>
+<body>
+    <h1>Game Leaderboard</h1>
+
+    <div class="control-bar">
+        <div class="search-container">
+            <span class="icon">☰</span>
+            <input type="text" id="searchInput" placeholder="Search Player Name">
+            <span class="icon">🔍</span>
+        </div>
+        <button class="btn btn-insert" onclick="openModal('insertModal')"><span>⊕</span> Insert Player</button>
+        <button class="btn btn-delete" onclick="openModal('deleteModal')"><span>🗑</span> Delete Player</button>
+    </div>
+
+    <div id="insertModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Add New Player</h3>
+            <input type="text" id="newUsername" placeholder="Enter Username">
+            <input type="number" id="newScore" placeholder="Enter Score">
+            <div class="modal-actions">
+                <button class="btn btn-insert" onclick="confirmInsert()">Confirm</button>
+                <button class="btn btn-cancel" onclick="closeModal('insertModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Remove Player</h3>
+            <p>Enter the username to remove from the leaderboard:</p>
+            <input type="text" id="delUsername" placeholder="Exact Username">
+            <div class="modal-actions">
+                <button class="btn btn-delete" onclick="confirmDelete()">Delete Player</button>
+                <button class="btn btn-cancel" onclick="closeModal('deleteModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Highscore</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/scores';
+        let allScores = [];
+
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL);
+                allScores = await res.json();
+                renderTable(allScores);
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = data.map(player => `
+                <tr>
+                    <td>${player.username}</td>
+                    <td>${player.score}</td>
+                </tr>
+            `).join('');
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        async function confirmInsert() {
+            const username = document.getElementById('newUsername').value;
+            const score = document.getElementById('newScore').value;
+            if (username && score) {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, score: parseInt(score) })
+                });
+                closeModal('insertModal');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newScore').value = '';
+                loadData();
+            }
+        }
+
+        async function confirmDelete() {
+            const username = document.getElementById('delUsername').value;
+            if (username) {
+                const response = await fetch(`${API_URL}/${username}`, { method: 'DELETE' });
+                if (response.ok) {
+                    closeModal('deleteModal');
+                    document.getElementById('delUsername').value = '';
+                    loadData();
+                }
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allScores.filter(p => p.username.toLowerCase().includes(term));
+            renderTable(filtered);
+        });
+
+        loadData();
+    </script>
+</body>
+</html>
