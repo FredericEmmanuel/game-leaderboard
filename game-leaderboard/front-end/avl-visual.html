@@ -470,10 +470,21 @@ function addLog(html) {
 // ─────────────────────────────────────────────
 // ACTIONS
 // ─────────────────────────────────────────────
-function confirmInsert() {
+async function confirmInsert() {
     const username = document.getElementById('newUsername').value.trim();
     const score    = parseInt(document.getElementById('newScore').value);
     if (!username || isNaN(score)) return;
+
+    // Sync with backend first
+    try {
+        await fetch('http://localhost:3000/api/scores', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username, score })
+        });
+    } catch(e) {
+        addLog(`<span class="c-red">ERROR</span> Could not reach server`);
+        return;
+    }
 
     lastRotation = { type: 'No Rotation', desc: 'Tree already balanced — no rotation needed', nodes: [] };
     root = insertNode(root, username, score);
@@ -488,17 +499,25 @@ function confirmInsert() {
     document.getElementById('newUsername').value = '';
     document.getElementById('newScore').value    = '';
     closeModal('insertModal');
-
-    // Also sync with backend
-    fetch('http://localhost:3000/api/scores', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ username, score })
-    }).catch(() => {});
 }
 
-function confirmDelete() {
+async function confirmDelete() {
     const username = document.getElementById('delUsername').value.trim();
     if (!username) return;
+
+    // Sync with backend first
+    try {
+        const res = await fetch(`http://localhost:3000/api/scores/${username}`, { method: 'DELETE' });
+        if (!res.ok) {
+            addLog(`<span class="c-red">ERROR</span> Player not found on server`);
+            document.getElementById('delUsername').value = '';
+            closeModal('deleteModal');
+            return;
+        }
+    } catch(e) {
+        addLog(`<span class="c-red">ERROR</span> Could not reach server`);
+        return;
+    }
 
     lastRotation = { type: 'No Rotation', desc: 'Tree already balanced — no rotation needed', nodes: [] };
     root = deleteNode(root, username);
@@ -510,8 +529,6 @@ function confirmDelete() {
 
     document.getElementById('delUsername').value = '';
     closeModal('deleteModal');
-
-    fetch(`http://localhost:3000/api/scores/${username}`, { method: 'DELETE' }).catch(() => {});
 }
 
 function clearTree() {
@@ -535,8 +552,29 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 
-// Initial render
-renderTree();
+// ─────────────────────────────────────────────
+// LOAD INITIAL DATA FROM BACKEND
+// ─────────────────────────────────────────────
+async function loadFromBackend() {
+    try {
+        const res = await fetch('http://localhost:3000/api/scores');
+        const players = await res.json();
+        // Build the AVL tree from the existing data
+        // Insert in random order so the tree self-balances naturally
+        const shuffled = players.slice().sort(() => Math.random() - 0.5);
+        shuffled.forEach(p => {
+            root = insertNode(root, p.username, p.score);
+        });
+        if (players.length > 0) {
+            addLog(`<span class="c-yellow">LOADED</span> ${players.length} player(s) from server`);
+        }
+    } catch(e) {
+        addLog(`<span class="c-red">WARN</span> Server offline — starting empty`);
+    }
+    renderTree();
+}
+
+loadFromBackend();
 </script>
 </body>
 </html>
