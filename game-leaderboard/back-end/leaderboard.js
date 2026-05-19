@@ -1,11 +1,15 @@
 // game-leaderboard/back-end/leaderboard.js
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const AVLTree = require('./avlTree');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from front-end folder
+app.use(express.static(path.join(__dirname, '../front-end')));
 
 let tree = new AVLTree();
 let root = null;
