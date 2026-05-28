@@ -2,54 +2,126 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
     <title>Game Leaderboard</title>
 </head>
 <body>
     <h1>Game Leaderboard</h1>
-    <table id="leaderboard">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Player Name</th>
-                <th>Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Leaderboard entries will be dynamically inserted here -->
-        </tbody>
-    </table>
+
+    <div style="margin-bottom:12px;">
+        <a href="avl-visual.html" style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.88rem;font-family:sans-serif;">
+            &#127807; AVL Tree Visual
+        </a>
+    </div>
+
+    <div class="control-bar">
+        <div class="search-container">
+            <span class="icon">☰</span>
+            <input type="text" id="searchInput" placeholder="Search Player Name">
+            <span class="icon">🔍</span>
+        </div>
+        <button class="btn btn-insert" onclick="openModal('insertModal')"><span>⊕</span> Insert Player</button>
+        <button class="btn btn-delete" onclick="openModal('deleteModal')"><span>🗑</span> Delete Player</button>
+    </div>
+
+    <div id="insertModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Add New Player</h3>
+            <input type="text" id="newUsername" placeholder="Enter Username">
+            <input type="number" id="newScore" placeholder="Enter Score">
+            <div class="modal-actions">
+                <button class="btn btn-insert" onclick="confirmInsert()">Confirm</button>
+                <button class="btn btn-cancel" onclick="closeModal('insertModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Remove Player</h3>
+            <p>Enter the username to remove from the leaderboard:</p>
+            <input type="text" id="delUsername" placeholder="Exact Username">
+            <div class="modal-actions">
+                <button class="btn btn-delete" onclick="confirmDelete()">Delete Player</button>
+                <button class="btn btn-cancel" onclick="closeModal('deleteModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Highscore</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+    </div>
 
     <script>
-        // Fetch leaderboard data from the backend API
-        async function fetchLeaderboard() {
+        const API_URL = 'http://localhost:3000/api/scores';
+        let allScores = [];
+
+        async function loadData() {
             try {
-                const response = await fetch('http://localhost:3000/leaderboard');
-                const data = await response.json();
-                updateLeaderboard(data);
-            } catch (error) {
-                console.error('Error fetching leaderboard:', error);
+                const res = await fetch(API_URL);
+                allScores = await res.json();
+                renderTable(allScores);
+            } catch (err) {
+                console.error("Fetch error:", err);
             }
         }
 
-        // Update the leaderboard table with fetched data
-        function updateLeaderboard(leaderboardData) {
-            const tbody = document.querySelector('#leaderboard tbody');
-            tbody.innerHTML = ''; // Clear existing entries
-
-            leaderboardData.forEach((entry, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${entry.playerName}</td>
-                    <td>${entry.score}</td>
-                `;
-                tbody.appendChild(row);
-            });
+        function renderTable(data) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = data.map(player => `
+                <tr>
+                    <td>${player.username}</td>
+                    <td>${player.score}</td>
+                </tr>
+            `).join('');
         }
 
-        // Fetch the leaderboard data when the page loads
-        window.onload = fetchLeaderboard;
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        async function confirmInsert() {
+            const username = document.getElementById('newUsername').value;
+            const score = document.getElementById('newScore').value;
+            if (username && score) {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, score: parseInt(score) })
+                });
+                closeModal('insertModal');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newScore').value = '';
+                loadData();
+            }
+        }
+
+        async function confirmDelete() {
+            const username = document.getElementById('delUsername').value;
+            if (username) {
+                const response = await fetch(`${API_URL}/${username}`, { method: 'DELETE' });
+                if (response.ok) {
+                    closeModal('deleteModal');
+                    document.getElementById('delUsername').value = '';
+                    loadData();
+                }
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allScores.filter(p => p.username.toLowerCase().includes(term));
+            renderTable(filtered);
+        });
+
+        loadData();
     </script>
 </body>
 </html>
